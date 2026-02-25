@@ -73,6 +73,33 @@ function showUpdateModal(localVersion, latestVersion, updateUrl) {
     document.body.appendChild(modal);
 }
 
+function testEmailSettings() {
+    const resultElement = document.getElementById('emailTestResult');
+    if (resultElement) {
+        resultElement.innerHTML = '<span style="color: #667eea;">发送中...</span>';
+    }
+    
+    fetch('api.php?action=test_email')
+        .then(response => response.json())
+        .then(data => {
+            if (resultElement) {
+                if (data.success) {
+                    resultElement.innerHTML = '<span style="color: #4caf50;">✅ 邮件发送成功</span>';
+                } else {
+                    resultElement.innerHTML = `<span style="color: #f44336;">❌ ${data.message}</span>`;
+                }
+            }
+            showToast(data.message, data.success ? 'success' : 'error');
+        })
+        .catch(error => {
+            console.error('测试邮件发送失败:', error);
+            if (resultElement) {
+                resultElement.innerHTML = '<span style="color: #f44336;">❌ 请求失败</span>';
+            }
+            showToast('测试邮件发送失败', 'error');
+        });
+}
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.user-dropdown')) {
         document.querySelectorAll('.dropdown-menu').forEach(menu => {

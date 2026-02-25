@@ -726,5 +726,17 @@ if ($action === 'check_update') {
     ]);
 }
 
+if ($action === 'test_email') {
+    require_once __DIR__ . '/../core/mail.php';
+    
+    try {
+        $mailer = new Mailer();
+        $result = $mailer->testConnection();
+        sendJsonResponse(['success' => true, 'message' => '邮件发送成功']);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
 sendJsonResponse(['success' => false, 'message' => '未知操作']);
 ?>

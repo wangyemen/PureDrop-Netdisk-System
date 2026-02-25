@@ -127,7 +127,13 @@
             </div>
             <div class="form-group">
                 <label>验证码有效期（分钟）</label>
-                <input type="number" id="verification_code_expiry" name="verification_code_expiry" value="10">
+                <input type="number" id="verification_code_expiry" name="verification_code_expiry" placeholder="例如: 10">
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <button type="button" onclick="testEmailSettings()" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: all 0.3s;">
+                    📧 测试邮件发送
+                </button>
+                <span id="emailTestResult" style="margin-left: 15px; font-size: 14px;"></span>
             </div>
         </form>
     </div>

@@ -1,5 +1,13 @@
 <?php
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../libs/PHPMailer.php';
+require_once __DIR__ . '/../libs/SMTP.php';
+require_once __DIR__ . '/../libs/Exception.php';
+
 class Mailer {
     private $smtpHost;
     private $smtpPort;
@@ -20,66 +28,55 @@ class Mailer {
     }
     
     public function send($to, $subject, $body, $isHtml = false) {
-        if (empty($this->smtpHost) || empty($this->smtpUsername) || empty($this->fromEmail)) {
+        if (empty($this->smtpHost) || empty($this->smtpUsername) || empty($this->smtpPassword) || empty($this->fromEmail)) {
             throw new Exception('邮件配置不完整，请先在管理后台配置SMTP设置');
         }
         
-        $boundary = md5(time());
+        $mail = new PHPMailer(true);
         
-        $headers = "From: {$this->fromName} <{$this->fromEmail}>\r\n";
-        $headers .= "Reply-To: {$this->fromEmail}\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        
-        if ($isHtml) {
-            $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
+        try {
+            // 服务器设置
+            $mail->SMTPDebug = SMTP::DEBUG_OFF;
+            $mail->isSMTP();
+            $mail->Host = $this->smtpHost;
+            $mail->SMTPAuth = true;
+            $mail->Username = $this->smtpUsername;
+            $mail->Password = $this->smtpPassword;
             
-            $message = "--{$boundary}\r\n";
-            $message .= "Content-Type: text/plain; charset=UTF-8\r\n";
-            $message .= "Content-Transfer-Encoding: base64\r\n\r\n";
-            $message .= chunk_split(base64_encode(strip_tags($body))) . "\r\n";
+            // 加密设置
+            if ($this->encryption === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port = 465;
+            } elseif ($this->encryption === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = 587;
+            } else {
+                $mail->SMTPSecure = false;
+                $mail->Port = 25;
+            }
             
-            $message .= "--{$boundary}\r\n";
-            $message .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $message .= "Content-Transfer-Encoding: base64\r\n\r\n";
-            $message .= chunk_split(base64_encode($body)) . "\r\n";
+            // 字符编码设置
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
             
-            $message .= "--{$boundary}--\r\n";
-        } else {
-            $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-            $message = $body;
+            // 收件人和发件人
+            $mail->setFrom($this->fromEmail, $this->fromName);
+            $mail->addAddress($to);
+            $mail->addReplyTo($this->fromEmail, $this->fromName);
+            
+            // 邮件内容
+            $mail->isHTML($isHtml);
+            $mail->Subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+            $mail->Body = $body;
+            $mail->AltBody = strip_tags($body);
+            
+            // 发送邮件
+            $mail->send();
+            return true;
+            
+        } catch (Exception $e) {
+            throw new Exception('邮件发送失败: ' . $mail->ErrorInfo);
         }
-        
-        $subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-        
-        if ($this->encryption === 'ssl') {
-            $context = stream_context_create([
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ]);
-            
-            ini_set('SMTP', $this->smtpHost);
-            ini_set('smtp_port', $this->smtpPort);
-            ini_set('sendmail_from', $this->fromEmail);
-            
-            $result = mail($to, $subject, $message, $headers);
-        } elseif ($this->encryption === 'tls') {
-            ini_set('SMTP', $this->smtpHost);
-            ini_set('smtp_port', $this->smtpPort);
-            ini_set('sendmail_from', $this->fromEmail);
-            
-            $result = mail($to, $subject, $message, $headers);
-        } else {
-            $result = mail($to, $subject, $message, $headers);
-        }
-        
-        if (!$result) {
-            throw new Exception('邮件发送失败，请检查SMTP配置');
-        }
-        
-        return true;
     }
     
     public function sendVerificationCode($email, $code) {

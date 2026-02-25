@@ -69,6 +69,9 @@ $announcements = getAnnouncements();
                     <?php endif; ?>
                     <div class="dropdown-menu" id="userDropdown">
                         <div class="dropdown-item" onclick="location.href='profile.php'">👤 个人资料</div>
+                        <?php if ($user['membership_level'] === 'premium'): ?>
+                        <div class="dropdown-item" onclick="location.href='admin/index.php'">⚙️ 后台管理</div>
+                        <?php endif; ?>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item" onclick="location.href='logout.php'">🚪 退出登录</div>
                     </div>

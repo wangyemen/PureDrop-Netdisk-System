@@ -153,6 +153,9 @@ function getLatestVersion() {
                     <button onclick="checkForUpdate()" style="margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s;">
                         🔄 检查更新
                     </button>
+                    <button onclick="window.location.href='../index.php'" style="margin-top: 5px; padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                        🏠 网站首页
+                    </button>
                 </div>
             </div>
             
@@ -187,7 +190,7 @@ function getLatestVersion() {
                         <button onclick="window.open('https://pddisk.xo.je/', '_blank')" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                             立即更新
                         </button>
-                        <button onclick="dismissUpdate()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                        <button style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                             稍后提醒
                         </button>
                     </div>
@@ -195,10 +198,11 @@ function getLatestVersion() {
             `;
             document.body.appendChild(updateModal);
             
-            function dismissUpdate() {
+            const dismissButton = updateModal.querySelector('button:last-child');
+            dismissButton.addEventListener('click', function() {
                 localStorage.setItem('updateDismissed', '<?php echo $latestVersion; ?>');
                 updateModal.remove();
-            }
+            });
         }
     });
     </script>
