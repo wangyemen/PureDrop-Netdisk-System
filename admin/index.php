@@ -15,6 +15,23 @@ if (!$user || $user['membership_level'] !== 'premium') {
 }
 
 $page = $_GET['page'] ?? 'dashboard';
+
+$localVersion = trim(file_get_contents(__DIR__ . '/../version.txt'));
+$latestVersion = getLatestVersion();
+$hasUpdate = version_compare($latestVersion, $localVersion, '>');
+
+function getLatestVersion() {
+    $url = 'https://raw.githubusercontent.com/wangyemen/PureDrop-Netdisk-System/main/version.txt';
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'header' => "User-Agent: Mozilla/5.0\r\n"
+        ]
+    ]);
+    
+    $content = @file_get_contents($url, false, $context);
+    return $content ? trim($content) : false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -121,8 +138,22 @@ $page = $_GET['page'] ?? 'dashboard';
         
         <div class="admin-content">
             <div class="admin-header">
-                <h1><?php echo getPageTitle($page); ?></h1>
-                <div style="margin-top: 8px; color: #666;">欢迎回来，<?php echo htmlspecialchars($user['nickname'] ?: $user['username']); ?></div>
+                <div>
+                    <h1><?php echo getPageTitle($page); ?></h1>
+                    <div style="margin-top: 8px; color: #666;">欢迎回来，<?php echo htmlspecialchars($user['nickname'] ?: $user['username']); ?></div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; color: #666;">当前版本</div>
+                    <div style="font-size: 18px; font-weight: 600; color: #667eea;">
+                        v<?php echo htmlspecialchars($localVersion); ?>
+                        <?php if ($hasUpdate): ?>
+                            <span style="background: #f44336; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">有新版本</span>
+                        <?php endif; ?>
+                    </div>
+                    <button onclick="checkForUpdate()" style="margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                        🔄 检查更新
+                    </button>
+                </div>
             </div>
             
             <div class="admin-main" id="adminMain">
@@ -132,6 +163,46 @@ $page = $_GET['page'] ?? 'dashboard';
     </div>
     
     <script src="../assets/js/admin.js"></script>
+    
+    <?php if ($hasUpdate && $latestVersion): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem('updateDismissed') !== '<?php echo $latestVersion; ?>') {
+            const updateModal = document.createElement('div');
+            updateModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            updateModal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🔄</div>
+                        <h2 style="font-size: 24px; color: #333; margin-bottom: 10px;">发现新版本</h2>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            当前版本: v<?php echo $localVersion; ?><br>
+                            最新版本: v<?php echo $latestVersion; ?>
+                        </p>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            建议您更新到最新版本以获得更好的体验和安全性。
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="window.open('https://pddisk.xo.je/', '_blank')" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            立即更新
+                        </button>
+                        <button onclick="dismissUpdate()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            稍后提醒
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(updateModal);
+            
+            function dismissUpdate() {
+                localStorage.setItem('updateDismissed', '<?php echo $latestVersion; ?>');
+                updateModal.remove();
+            }
+        }
+    });
+    </script>
+    <?php endif; ?>
 </body>
 </html>
 

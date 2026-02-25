@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/core/functions.php';
+require_once __DIR__ . '/core/mail.php';
 
 if (isLoggedIn()) {
     header('Location: index.php');
@@ -8,6 +9,7 @@ if (isLoggedIn()) {
 }
 
 $allowRegister = getSetting('allow_register', true);
+$enableEmailVerification = getSetting('enable_email_verification', false);
 
 if (!$allowRegister) {
     $error = '注册功能已关闭';
@@ -21,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allowRegister) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $password2 = $_POST['password2'] ?? '';
+    $verificationCode = $_POST['verification_code'] ?? '';
     
     if (empty($username) || empty($email) || empty($password)) {
         $error = '请填写完整信息';
@@ -32,6 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allowRegister) {
         $error = '密码长度不能少于6位';
     } elseif ($password !== $password2) {
         $error = '两次密码输入不一致';
+    } elseif ($enableEmailVerification && empty($verificationCode)) {
+        $error = '请输入邮箱验证码';
+    } elseif ($enableEmailVerification && !verifyCode($email, $verificationCode)) {
+        $error = '验证码错误或已过期';
     } else {
         $db = getDB();
         
@@ -127,8 +134,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allowRegister) {
             </div>
             <div class="form-group">
                 <label>邮箱</label>
-                <input type="email" name="email" required placeholder="请输入您的邮箱">
+                <input type="email" name="email" id="email" required placeholder="请输入您的邮箱">
             </div>
+            <?php if ($enableEmailVerification): ?>
+            <div class="form-group">
+                <label>邮箱验证码</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="verification_code" id="verification_code" required placeholder="请输入验证码" style="flex: 1;">
+                    <button type="button" id="sendCodeBtn" class="btn" style="width: auto; padding: 12px 20px;">发送验证码</button>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="form-group">
                 <label>密码</label>
                 <input type="password" name="password" required placeholder="至少6位">
@@ -145,5 +161,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allowRegister) {
             <p>已有账户？<a href="login.php">立即登录</a></p>
         </div>
     </div>
+    
+    <?php if ($enableEmailVerification): ?>
+    <script>
+    let countdown = 0;
+    let timer = null;
+    
+    document.getElementById('sendCodeBtn').addEventListener('click', function() {
+        const email = document.getElementById('email').value;
+        
+        if (!email) {
+            alert('请先输入邮箱地址');
+            return;
+        }
+        
+        if (!validateEmail(email)) {
+            alert('邮箱格式不正确');
+            return;
+        }
+        
+        if (countdown > 0) {
+            return;
+        }
+        
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = '发送中...';
+        
+        fetch('api/send_code.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'email=' + encodeURIComponent(email)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('验证码已发送到您的邮箱，请查收');
+                startCountdown(btn);
+            } else {
+                alert(data.message || '发送失败，请稍后重试');
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        })
+        .catch(error => {
+            console.error('发送验证码时发生错误:', error);
+            alert('发送失败，请稍后重试');
+            btn.disabled = false;
+            btn.textContent = '发送验证码';
+        });
+    });
+    
+    function startCountdown(btn) {
+        countdown = 60;
+        btn.textContent = countdown + '秒后重试';
+        
+        timer = setInterval(function() {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            } else {
+                btn.textContent = countdown + '秒后重试';
+            }
+        }, 1000);
+    }
+    
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+    </script>
+    <?php endif; ?>
 </body>
 </html>

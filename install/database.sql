@@ -152,13 +152,36 @@ CREATE TABLE IF NOT EXISTS `recycle_bin` (
   KEY `file_id` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `verification_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `code` varchar(10) NOT NULL,
+  `expiry_time` datetime NOT NULL,
+  `is_used` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `email` (`email`),
+  KEY `code` (`code`),
+  KEY `expiry_time` (`expiry_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_type`, `description`) VALUES
 ('site_name', 'PureDrop网盘', 'string', '网站名称'),
 ('site_logo', '', 'string', '网站Logo'),
+('site_url', '', 'string', '网站URL'),
 ('allow_register', '1', 'boolean', '是否允许注册'),
 ('default_storage', '1073741824', 'number', '默认存储空间(字节)'),
 ('max_login_attempts', '5', 'number', '最大登录尝试次数'),
 ('enable_captcha', '0', 'boolean', '是否启用验证码'),
 ('default_share_expiry', '7', 'number', '默认分享有效期(天)'),
 ('require_extract_code', '0', 'boolean', '是否强制提取码'),
-('max_file_size', '2147483648', 'number', '最大文件大小(字节)');
+('max_file_size', '2147483648', 'number', '最大文件大小(字节)'),
+('smtp_host', '', 'string', 'SMTP服务器'),
+('smtp_port', '465', 'number', 'SMTP端口'),
+('smtp_username', '', 'string', 'SMTP用户名'),
+('smtp_password', '', 'string', 'SMTP密码'),
+('smtp_from_email', '', 'string', '发件人邮箱'),
+('smtp_from_name', 'PureDrop网盘', 'string', '发件人名称'),
+('smtp_encryption', 'ssl', 'string', 'SMTP加密方式'),
+('enable_email_verification', '0', 'boolean', '是否启用邮箱验证'),
+('verification_code_expiry', '10', 'number', '验证码有效期(分钟)');

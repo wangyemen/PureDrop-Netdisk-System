@@ -27,6 +27,15 @@
                     <input type="url" id="site_url" name="site_url">
                 </div>
                 <div class="form-group">
+                    <label>允许注册</label>
+                    <select id="allow_register" name="allow_register">
+                        <option value="1">是</option>
+                        <option value="0">否</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
                     <label>默认存储空间（字节）</label>
                     <input type="number" id="default_storage" name="default_storage">
                 </div>
@@ -66,6 +75,59 @@
             <div class="form-group">
                 <label>最大文件大小（字节）</label>
                 <input type="number" id="max_file_size" name="max_file_size">
+            </div>
+            
+            <h3 style="margin: 30px 0 20px; color: #333;">邮件设置</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>SMTP服务器</label>
+                    <input type="text" id="smtp_host" name="smtp_host" placeholder="例如: smtp.qq.com">
+                </div>
+                <div class="form-group">
+                    <label>SMTP端口</label>
+                    <input type="number" id="smtp_port" name="smtp_port" placeholder="例如: 465">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>SMTP用户名</label>
+                    <input type="text" id="smtp_username" name="smtp_username" placeholder="例如: your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>SMTP密码</label>
+                    <input type="password" id="smtp_password" name="smtp_password" placeholder="SMTP授权码">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>发件人邮箱</label>
+                    <input type="email" id="smtp_from_email" name="smtp_from_email" placeholder="例如: your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>发件人名称</label>
+                    <input type="text" id="smtp_from_name" name="smtp_from_name" placeholder="例如: PureDrop网盘">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>加密方式</label>
+                    <select id="smtp_encryption" name="smtp_encryption">
+                        <option value="">无</option>
+                        <option value="tls">TLS</option>
+                        <option value="ssl">SSL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>启用邮箱验证</label>
+                    <select id="enable_email_verification" name="enable_email_verification">
+                        <option value="1">是</option>
+                        <option value="0">否</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>验证码有效期（分钟）</label>
+                <input type="number" id="verification_code_expiry" name="verification_code_expiry" value="10">
             </div>
         </form>
     </div>
@@ -146,6 +208,17 @@ function saveSettings() {
         formData.append('default_share_expiry', document.getElementById('default_share_expiry').value);
         formData.append('require_extract_code', document.getElementById('require_extract_code').value);
         formData.append('max_file_size', document.getElementById('max_file_size').value);
+        
+        // 添加邮件设置字段
+        formData.append('smtp_host', document.getElementById('smtp_host').value);
+        formData.append('smtp_port', document.getElementById('smtp_port').value);
+        formData.append('smtp_username', document.getElementById('smtp_username').value);
+        formData.append('smtp_password', document.getElementById('smtp_password').value);
+        formData.append('smtp_from_email', document.getElementById('smtp_from_email').value);
+        formData.append('smtp_from_name', document.getElementById('smtp_from_name').value);
+        formData.append('smtp_encryption', document.getElementById('smtp_encryption').value);
+        formData.append('enable_email_verification', document.getElementById('enable_email_verification').value);
+        formData.append('verification_code_expiry', document.getElementById('verification_code_expiry').value);
         
         // 添加当前Logo值（如果没有上传新文件）
         const currentLogo = document.getElementById('site_logo').value;

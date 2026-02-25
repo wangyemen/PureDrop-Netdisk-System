@@ -234,6 +234,51 @@ if ($action === 'settings') {
                 'value' => '2147483648',
                 'type' => 'number',
                 'description' => '最大文件大小(字节)'
+            ],
+            'smtp_host' => [
+                'value' => '',
+                'type' => 'string',
+                'description' => 'SMTP服务器'
+            ],
+            'smtp_port' => [
+                'value' => '465',
+                'type' => 'number',
+                'description' => 'SMTP端口'
+            ],
+            'smtp_username' => [
+                'value' => '',
+                'type' => 'string',
+                'description' => 'SMTP用户名'
+            ],
+            'smtp_password' => [
+                'value' => '',
+                'type' => 'string',
+                'description' => 'SMTP密码'
+            ],
+            'smtp_from_email' => [
+                'value' => '',
+                'type' => 'string',
+                'description' => '发件人邮箱'
+            ],
+            'smtp_from_name' => [
+                'value' => 'PureDrop网盘',
+                'type' => 'string',
+                'description' => '发件人名称'
+            ],
+            'smtp_encryption' => [
+                'value' => 'ssl',
+                'type' => 'string',
+                'description' => 'SMTP加密方式'
+            ],
+            'enable_email_verification' => [
+                'value' => '0',
+                'type' => 'boolean',
+                'description' => '是否启用邮箱验证'
+            ],
+            'verification_code_expiry' => [
+                'value' => '10',
+                'type' => 'number',
+                'description' => '验证码有效期(分钟)'
             ]
         ];
         
@@ -307,6 +352,56 @@ if ($action === 'settings') {
     }
 }
 
+function getSettingDescription($key) {
+    $descriptions = [
+        'site_name' => '网站名称',
+        'site_logo' => '网站Logo',
+        'site_url' => '网站URL',
+        'allow_register' => '是否允许注册',
+        'default_storage' => '默认存储空间(字节)',
+        'max_login_attempts' => '最大登录尝试次数',
+        'enable_captcha' => '是否启用验证码',
+        'default_share_expiry' => '默认分享有效期(天)',
+        'require_extract_code' => '是否强制提取码',
+        'max_file_size' => '最大文件大小(字节)',
+        'smtp_host' => 'SMTP服务器',
+        'smtp_port' => 'SMTP端口',
+        'smtp_username' => 'SMTP用户名',
+        'smtp_password' => 'SMTP密码',
+        'smtp_from_email' => '发件人邮箱',
+        'smtp_from_name' => '发件人名称',
+        'smtp_encryption' => 'SMTP加密方式',
+        'enable_email_verification' => '是否启用邮箱验证',
+        'verification_code_expiry' => '验证码有效期(分钟)'
+    ];
+    return $descriptions[$key] ?? '网站设置';
+}
+
+function getSettingType($key) {
+    $types = [
+        'site_name' => 'string',
+        'site_logo' => 'string',
+        'site_url' => 'string',
+        'allow_register' => 'boolean',
+        'default_storage' => 'number',
+        'max_login_attempts' => 'number',
+        'enable_captcha' => 'boolean',
+        'default_share_expiry' => 'number',
+        'require_extract_code' => 'boolean',
+        'max_file_size' => 'number',
+        'smtp_host' => 'string',
+        'smtp_port' => 'number',
+        'smtp_username' => 'string',
+        'smtp_password' => 'string',
+        'smtp_from_email' => 'string',
+        'smtp_from_name' => 'string',
+        'smtp_encryption' => 'string',
+        'enable_email_verification' => 'boolean',
+        'verification_code_expiry' => 'number'
+    ];
+    return $types[$key] ?? 'string';
+}
+
 if ($action === 'settings_update') {
     try {
         $db = getDB();
@@ -343,16 +438,26 @@ if ($action === 'settings_update') {
             'enable_captcha' => $_POST['enable_captcha'] ?? '0',
             'default_share_expiry' => $_POST['default_share_expiry'] ?? '7',
             'require_extract_code' => $_POST['require_extract_code'] ?? '0',
-            'max_file_size' => $_POST['max_file_size'] ?? '1073741824'
+            'max_file_size' => $_POST['max_file_size'] ?? '1073741824',
+            'smtp_host' => $_POST['smtp_host'] ?? '',
+            'smtp_port' => $_POST['smtp_port'] ?? '465',
+            'smtp_username' => $_POST['smtp_username'] ?? '',
+            'smtp_password' => $_POST['smtp_password'] ?? '',
+            'smtp_from_email' => $_POST['smtp_from_email'] ?? '',
+            'smtp_from_name' => $_POST['smtp_from_name'] ?? '',
+            'smtp_encryption' => $_POST['smtp_encryption'] ?? 'ssl',
+            'enable_email_verification' => $_POST['enable_email_verification'] ?? '0',
+            'verification_code_expiry' => $_POST['verification_code_expiry'] ?? '10'
         ];
         
         // 保存设置到数据库
         foreach ($settings as $key => $value) {
+            $settingType = getSettingType($key);
             $result = $db->query(
                 "INSERT INTO system_settings (setting_key, setting_value, setting_type, description) 
                  VALUES (?, ?, ?, ?) 
-                 ON DUPLICATE KEY UPDATE setting_value = ?",
-                [$key, $value, 'string', getSettingDescription($key), $value]
+                 ON DUPLICATE KEY UPDATE setting_value = ?, setting_type = ?",
+                [$key, $value, $settingType, getSettingDescription($key), $value, $settingType]
             );
             
             if ($result['success']) {
@@ -590,6 +695,35 @@ if ($action === 'delete_all_data') {
         $db->rollback();
         sendJsonResponse(['success' => false, 'message' => '删除失败: ' . $e->getMessage()]);
     }
+}
+
+if ($action === 'check_update') {
+    $localVersion = trim(file_get_contents(__DIR__ . '/../version.txt'));
+    
+    $url = 'https://raw.githubusercontent.com/wangyemen/PureDrop-Netdisk-System/main/version.txt';
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'header' => "User-Agent: Mozilla/5.0\r\n"
+        ]
+    ]);
+    
+    $latestVersion = @file_get_contents($url, false, $context);
+    
+    if ($latestVersion === false) {
+        sendJsonResponse(['success' => false, 'message' => '无法获取最新版本信息']);
+    }
+    
+    $latestVersion = trim($latestVersion);
+    $hasUpdate = version_compare($latestVersion, $localVersion, '>');
+    
+    sendJsonResponse([
+        'success' => true,
+        'local_version' => $localVersion,
+        'latest_version' => $latestVersion,
+        'has_update' => $hasUpdate,
+        'update_url' => 'https://pddisk.xo.je/'
+    ]);
 }
 
 sendJsonResponse(['success' => false, 'message' => '未知操作']);

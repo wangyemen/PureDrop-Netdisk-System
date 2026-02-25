@@ -192,7 +192,7 @@ function getSetting($key, $default = null) {
             case 'number':
                 return (int)$value;
             case 'boolean':
-                return (bool)$value;
+                return $value === '1' || $value === 'true' || $value === true;
             case 'json':
                 return json_decode($value, true);
             default:
